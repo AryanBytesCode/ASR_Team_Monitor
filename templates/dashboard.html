@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project_name }} - Reviewer Analytics{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <!-- Dashboard Top Bar -->
+  <div class="dashboard-header">
+    <div class="dashboard-title-area">
+      <div class="breadcrumb">
+        <a href="{{ url_for('projects_list') }}">&larr; Back to Projects</a>
+      </div>
+      <h1 class="page-title">{{ project_name }}</h1>
+      <p class="project-id-tag"><code>Project ID: {{ project_id }}</code></p>
+    </div>
+    <div class="dashboard-actions">
+      <a href="{{ url_for('project_dashboard', project_id=project_id) }}" class="btn btn-secondary">
+        🔄 Refresh Data
+      </a>
+      <a href="{{ asreview_base_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
+        Open in ASReview LAB &nearr;
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Overview Cards -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-label">Total Labeled Records</span>
+        <span class="metric-icon">📑</span>
+      </div>
+      <div class="metric-value">{{ metrics.summary.total_screened }}</div>
+      <div class="metric-subtext">Cumulative across all reviewers</div>
+    </div>
+
+    <div class="metric-card highlight-card">
+      <div class="metric-header">
+        <span class="metric-label">Screened Today</span>
+        <span class="badge badge-today">{{ metrics.target_date_str }}</span>
+      </div>
+      <div class="metric-value text-accent">{{ metrics.summary.total_today }}</div>
+      <div class="metric-subtext">{{ metrics.summary.today_reviewers_count }} active reviewer(s) today</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-label">Inclusion Breakdown</span>
+        <span class="metric-icon">⚖️</span>
+      </div>
+      <div class="metric-value-split">
+        <span class="text-relevant"><strong>{{ metrics.summary.total_relevant }}</strong> Relevant</span>
+        <span class="divider">/</span>
+        <span class="text-irrelevant"><strong>{{ metrics.summary.total_irrelevant }}</strong> Irrelevant</span>
+      </div>
+      <div class="metric-subtext">Overall inclusion rate: <strong>{{ metrics.summary.overall_inclusion_rate }}%</strong></div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-label">Total Reviewers</span>
+        <span class="metric-icon">👥</span>
+      </div>
+      <div class="metric-value">{{ metrics.summary.reviewers_count }}</div>
+      <div class="metric-subtext">Contributing team members</div>
+    </div>
+  </div>
+
+  <!-- Section 1: Total Records Labeled per Reviewer -->
+  <div class="section-card">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Total Records Labeled per Reviewer</h2>
+        <p class="section-subtitle">Overall screening volume and inclusion/exclusion decisions per team member.</p>
+      </div>
+    </div>
+
+    {% if metrics.total_breakdown and metrics.total_breakdown | length > 0 %}
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Reviewer</th>
+              <th>Contact Email</th>
+              <th class="text-center">Total Labeled</th>
+              <th class="text-center">Relevant (Included)</th>
+              <th class="text-center">Irrelevant (Excluded)</th>
+              <th>Inclusion Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for reviewer in metrics.total_breakdown %}
+              <tr>
+                <td class="reviewer-cell">
+                  <span class="reviewer-avatar">{{ reviewer.name[0] | upper }}</span>
+                  <span class="reviewer-name"><strong>{{ reviewer.name }}</strong></span>
+                </td>
+                <td class="email-cell">{{ reviewer.email or '—' }}</td>
+                <td class="text-center count-cell">
+                  <span class="count-badge total-badge">{{ reviewer.total_labeled }}</span>
+                </td>
+                <td class="text-center count-cell">
+                  <span class="count-badge relevant-badge">{{ reviewer.relevant }}</span>
+                </td>
+                <td class="text-center count-cell">
+                  <span class="count-badge irrelevant-badge">{{ reviewer.irrelevant }}</span>
+                </td>
+                <td class="rate-cell">
+                  <div class="rate-container">
+                    <div class="progress-bar-bg">
+                      <div class="progress-bar-fill" style="width: {{ reviewer.inclusion_rate }}%;"></div>
+                    </div>
+                    <span class="rate-text">{{ reviewer.inclusion_rate }}%</span>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state-mini">
+        <p>No screening records found in this project yet.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Section 2: Records Labeled Today -->
+  <div class="section-card today-section">
+    <div class="section-header">
+      <div>
+        <div class="section-title-wrapper">
+          <h2 class="section-title">Records Labeled Today</h2>
+          <span class="badge badge-accent">{{ metrics.target_date_str }}</span>
+        </div>
+        <p class="section-subtitle">Screening activity recorded during today's session.</p>
+      </div>
+    </div>
+
+    {% if metrics.today_breakdown and metrics.today_breakdown | length > 0 %}
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Reviewer</th>
+              <th>Contact Email</th>
+              <th class="text-center">Records Labeled Today</th>
+              <th class="text-center">Relevant Today</th>
+              <th class="text-center">Irrelevant Today</th>
+              <th>Today's Inclusion Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for reviewer in metrics.today_breakdown %}
+              <tr class="{{ 'row-active' if reviewer.today_labeled > 0 else 'row-inactive' }}">
+                <td class="reviewer-cell">
+                  <span class="reviewer-avatar {{ 'avatar-active' if reviewer.today_labeled > 0 else '' }}">
+                    {{ reviewer.name[0] | upper }}
+                  </span>
+                  <span class="reviewer-name"><strong>{{ reviewer.name }}</strong></span>
+                </td>
+                <td class="email-cell">{{ reviewer.email or '—' }}</td>
+                <td class="text-center count-cell">
+                  {% if reviewer.today_labeled > 0 %}
+                    <span class="count-badge today-active-badge">{{ reviewer.today_labeled }}</span>
+                  {% else %}
+                    <span class="count-badge zero-badge">0</span>
+                  {% endif %}
+                </td>
+                <td class="text-center count-cell">
+                  <span class="count-badge relevant-badge">{{ reviewer.relevant }}</span>
+                </td>
+                <td class="text-center count-cell">
+                  <span class="count-badge irrelevant-badge">{{ reviewer.irrelevant }}</span>
+                </td>
+                <td class="rate-cell">
+                  {% if reviewer.today_labeled > 0 %}
+                    <div class="rate-container">
+                      <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width: {{ reviewer.inclusion_rate }}%;"></div>
+                      </div>
+                      <span class="rate-text">{{ reviewer.inclusion_rate }}%</span>
+                    </div>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state-mini">
+        <p>No records have been labeled today yet.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

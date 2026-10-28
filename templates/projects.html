@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Select Project - ASReview Reviewer Analytics{% endblock %}
+
+{% block content %}
+<div class="projects-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Available Projects</h1>
+      <p class="page-subtitle">Select an ASReview project to analyze reviewer labeling performance and today's activity.</p>
+    </div>
+  </div>
+
+  {% if projects and projects | length > 0 %}
+    <div class="projects-grid">
+      {% for proj in projects %}
+        <div class="project-card">
+          <div class="project-card-header">
+            <span class="badge badge-mode">{{ proj.mode | upper if proj.mode else 'ORACLE' }}</span>
+            <span class="badge badge-status">{{ proj.review.status | capitalize if proj.review and proj.review.status else 'Active' }}</span>
+          </div>
+
+          <h3 class="project-title">{{ proj.name or 'Untitled Project' }}</h3>
+          <p class="project-id"><code>ID: {{ proj.id }}</code></p>
+
+          <div class="project-details">
+            {% if proj.datasets and proj.datasets | length > 0 %}
+              <div class="detail-item">
+                <span class="detail-label">Dataset</span>
+                <span class="detail-value truncate" title="{{ proj.datasets[0].name }}">{{ proj.datasets[0].name }}</span>
+              </div>
+            {% endif %}
+            <div class="detail-item">
+              <span class="detail-label">ASReview Version</span>
+              <span class="detail-value">{{ proj.version or '3.x' }}</span>
+            </div>
+          </div>
+
+          <div class="project-card-footer">
+            <a href="{{ url_for('project_dashboard', project_id=proj.id) }}" class="btn btn-primary btn-block">
+              View Reviewer Analytics &rarr;
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📁</div>
+      <h3>No projects found</h3>
+      <p>Your account does not currently have access to any projects on the ASReview server.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
