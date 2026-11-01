@@ -40,12 +40,10 @@ Edit `.env` and configure your settings:
 - `PROJECT_START_DATE`: The date the project started (YYYY-MM-DD).
 - `WEEK_START_DAY`: Which day starts the week (0=Monday, 6=Sunday).
 - `TUNNEL_TOKEN`: Your Cloudflare Zero Trust tunnel token (required for **Option A**).
-- `DOMAIN`: Your custom public domain name (required for **Option B**).
-- `LETSENCRYPT_EMAIL`: Your email address for TLS certificate expiry notices (required for **Option B**).
 
 ### 3. Start the Application
 
-You can expose the application securely using either Cloudflare Tunnels or Traefik with Let's Encrypt. Choose the option that fits your infrastructure:
+You can expose the application securely using Cloudflare Tunnels or run it locally/directly over HTTP. Choose the option that fits your infrastructure:
 
 #### Option A: Cloudflare Tunnel (Default)
 This method is recommended if you don't want to open any inbound ports on your server's firewall. Ensure you've provided the `TUNNEL_TOKEN` in the `.env` file.
@@ -53,17 +51,16 @@ This method is recommended if you don't want to open any inbound ports on your s
 docker-compose up -d
 ```
 
-#### Option B: Traefik + Let's Encrypt
-This method is recommended if you have your own domain name and want to serve the dashboard directly from your server. Ensure you have pointed your domain's DNS `A` record to your server's IP address, and that ports 80 and 443 are open on your firewall.
+#### Option B: Direct HTTP (Local/IP Access)
+This method is recommended if you want to access the dashboard directly via your server's IP address and a specific port, or if you plan to put it behind your own existing reverse proxy (like Nginx). Ensure the designated port (default `5050`) is open on your firewall.
 ```bash
-# Use the alternative compose file tailored for Traefik
-docker-compose -f docker-compose.traefik.yaml up -d
+# Use the alternative compose file tailored for direct HTTP access
+docker-compose -f docker-compose.http.yaml up -d
 ```
 
 ### 4. Access the Dashboard
-- **Local Access:** Open your web browser and navigate to `http://localhost:<PORT>` (e.g., `http://localhost:5050`).
 - **Cloudflare Tunnel (Option A):** Your dashboard will be automatically routed through Cloudflare to the domain you configured in your Zero Trust dashboard.
-- **Traefik Custom Domain (Option B):** Wait a minute or two for the Let's Encrypt certificate to generate, then navigate to `https://<YOUR_DOMAIN>` (e.g., `https://dashboard.yourdomain.com`).
+- **Direct HTTP (Option B):** Open your web browser and navigate to `http://<YOUR_SERVER_IP>:<PORT>` (e.g., `http://192.168.1.10:5050` or `http://localhost:5050`).
 
 ---
 
