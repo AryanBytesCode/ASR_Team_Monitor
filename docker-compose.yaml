@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   dashboard:
-    image: your-dockerhub-username/asreview-dashboard:latest
+    image: aryanbytescode/asreview-dashboard:latest
     container_name: asreview-dashboard
     restart: unless-stopped
     env_file:
