@@ -3,7 +3,7 @@ Metrics and RIS parsing engine for ASReview reviewer analytics.
 Uses Pandas for aggregating reviewer counts and today's activity.
 """
 
-from datetime import datetime, date
+from datetime import datetime, timedelta, date
 import re
 import pandas as pd
 
@@ -72,7 +72,10 @@ def parse_asreview_ris(ris_text: str) -> list[dict]:
     return records
 
 
-def compute_reviewer_metrics(records: list[dict], target_date: date = None) -> dict:
+def compute_reviewer_metrics(records: list[dict], target_date: date = None, 
+                             weekly_goal: int = 100, 
+                             project_start_date_str: str = "2026-01-01", 
+                             week_start_day: int = 0) -> dict:
     """
     Calculates total and today's reviewer metrics using Pandas.
 
@@ -91,6 +94,24 @@ def compute_reviewer_metrics(records: list[dict], target_date: date = None) -> d
         target_date = date.today()
     target_date_str = target_date.strftime("%Y-%m-%d")
 
+    try:
+        project_start_date = datetime.strptime(project_start_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        project_start_date = target_date
+
+    current_weekday = target_date.weekday()
+    days_since_start = (current_weekday - week_start_day) % 7
+    current_week_start = target_date - timedelta(days=days_since_start)
+
+    proj_start_weekday = project_start_date.weekday()
+    days_since_proj_start_week_start = (proj_start_weekday - week_start_day) % 7
+    project_first_week_start = project_start_date - timedelta(days=days_since_proj_start_week_start)
+
+    weeks_elapsed = (current_week_start - project_first_week_start).days // 7 + 1
+    if weeks_elapsed < 1:
+        weeks_elapsed = 1
+    expected_total = weeks_elapsed * weekly_goal
+
     if not records:
         return {
             "summary": {
@@ -104,7 +125,11 @@ def compute_reviewer_metrics(records: list[dict], target_date: date = None) -> d
             },
             "total_breakdown": [],
             "today_breakdown": [],
-            "target_date_str": target_date_str
+            "weekly_breakdown": [],
+            "target_date_str": target_date_str,
+            "weekly_goal": weekly_goal,
+            "weeks_elapsed": 1,
+            "expected_total": weekly_goal
         }
 
     df = pd.DataFrame(records)
@@ -142,14 +167,16 @@ def compute_reviewer_metrics(records: list[dict], target_date: date = None) -> d
         rel_count = int((group["label"] == 1).sum())
         irrel_count = int((group["label"] == 0).sum())
         rate = round((rel_count / total_count * 100), 1) if total_count > 0 else 0.0
-
+        overdue = max(0, expected_total - total_count)
+        
         total_breakdown.append({
             "name": reviewer_name,
             "email": reviewer_email,
             "total_labeled": total_count,
             "relevant": rel_count,
             "irrelevant": irrel_count,
-            "inclusion_rate": rate
+            "inclusion_rate": rate,
+            "overdue": overdue
         })
 
     # Sort descending by total labeled
@@ -188,6 +215,31 @@ def compute_reviewer_metrics(records: list[dict], target_date: date = None) -> d
                 "inclusion_rate": 0.0
             })
 
+    # 2.5 Weekly breakdown per reviewer
+    weekly_breakdown = []
+    weekly_df = df[df["screen_date"] >= current_week_start]
+
+    for (reviewer_name, reviewer_email), group in grouped_total:
+        total_count = len(group)
+        w_count = 0
+        if not weekly_df.empty:
+            w_df_user = weekly_df[(weekly_df["asreview_user_name"] == reviewer_name) & (weekly_df["asreview_user_email"] == reviewer_email)]
+            w_count = len(w_df_user)
+        
+        overdue = max(0, expected_total - total_count)
+        weekly_progress_pct = min(100, (w_count / weekly_goal * 100)) if weekly_goal > 0 else 0
+        total_progress_pct = min(100, (total_count / expected_total * 100)) if expected_total > 0 else 0
+        
+        weekly_breakdown.append({
+            "name": reviewer_name,
+            "email": reviewer_email,
+            "weekly_labeled": w_count,
+            "weekly_progress_pct": round(weekly_progress_pct, 1),
+            "total_progress_pct": round(total_progress_pct, 1),
+            "overdue": overdue
+        })
+    weekly_breakdown.sort(key=lambda x: x["weekly_labeled"], reverse=True)
+
     # 3. Overall Summary Cards
     total_screened = len(df)
     total_rel = int((df["label"] == 1).sum())
@@ -209,5 +261,9 @@ def compute_reviewer_metrics(records: list[dict], target_date: date = None) -> d
         "summary": summary,
         "total_breakdown": total_breakdown,
         "today_breakdown": today_breakdown,
-        "target_date_str": target_date_str
+        "weekly_breakdown": weekly_breakdown,
+        "target_date_str": target_date_str,
+        "weekly_goal": weekly_goal,
+        "weeks_elapsed": weeks_elapsed,
+        "expected_total": expected_total
     }

@@ -32,6 +32,9 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "asreview-analytics-default-secre
 
 ASREVIEW_BASE_URL = os.getenv("ASREVIEW_BASE_URL", "http://127.0.0.1:8081").rstrip("/")
 PORT = int(os.getenv("PORT", 5050))
+WEEKLY_GOAL = int(os.getenv("WEEKLY_GOAL", 100))
+PROJECT_START_DATE_STR = os.getenv("PROJECT_START_DATE", "2026-01-01")
+WEEK_START_DAY = int(os.getenv("WEEK_START_DAY", 0))
 
 
 def login_required(f):
@@ -125,10 +128,20 @@ def project_dashboard(project_id):
     try:
         ris_text = fetch_project_dataset_ris(ASREVIEW_BASE_URL, cookies, project_id)
         records = parse_asreview_ris(ris_text)
-        metrics_data = compute_reviewer_metrics(records)
+        metrics_data = compute_reviewer_metrics(
+            records,
+            weekly_goal=WEEKLY_GOAL,
+            project_start_date_str=PROJECT_START_DATE_STR,
+            week_start_day=WEEK_START_DAY
+        )
     except Exception as e:
         flash(f"Error loading project screening dataset: {e}", "danger")
-        metrics_data = compute_reviewer_metrics([])
+        metrics_data = compute_reviewer_metrics(
+            [],
+            weekly_goal=WEEKLY_GOAL,
+            project_start_date_str=PROJECT_START_DATE_STR,
+            week_start_day=WEEK_START_DAY
+        )
 
     return render_template(
         "dashboard.html",
@@ -145,7 +158,12 @@ def api_project_metrics(project_id):
     try:
         ris_text = fetch_project_dataset_ris(ASREVIEW_BASE_URL, cookies, project_id)
         records = parse_asreview_ris(ris_text)
-        metrics_data = compute_reviewer_metrics(records)
+        metrics_data = compute_reviewer_metrics(
+            records,
+            weekly_goal=WEEKLY_GOAL,
+            project_start_date_str=PROJECT_START_DATE_STR,
+            week_start_day=WEEK_START_DAY
+        )
         return jsonify({"success": True, "data": metrics_data})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

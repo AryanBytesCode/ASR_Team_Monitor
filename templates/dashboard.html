@@ -125,6 +125,74 @@
     {% endif %}
   </div>
 
+  <!-- Section 1.5: Weekly Goals & Overdue -->
+  <div class="section-card">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Weekly Goals & Overdue Progress</h2>
+        <p class="section-subtitle">Weekly goal: {{ metrics.weekly_goal }} | Weeks elapsed: {{ metrics.weeks_elapsed }} | Expected total: {{ metrics.expected_total }}</p>
+      </div>
+    </div>
+
+    {% if metrics.weekly_breakdown and metrics.weekly_breakdown | length > 0 %}
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Reviewer</th>
+              <th>Contact Email</th>
+              <th class="text-center">This Week</th>
+              <th>Weekly Progress</th>
+              <th class="text-center">Overdue Records</th>
+              <th>Total Progress vs Expected</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for reviewer in metrics.weekly_breakdown %}
+              <tr>
+                <td class="reviewer-cell">
+                  <span class="reviewer-avatar">{{ reviewer.name[0] | upper }}</span>
+                  <span class="reviewer-name"><strong>{{ reviewer.name }}</strong></span>
+                </td>
+                <td class="email-cell">{{ reviewer.email or '—' }}</td>
+                <td class="text-center count-cell">
+                  <span class="count-badge today-active-badge">{{ reviewer.weekly_labeled }}</span>
+                </td>
+                <td class="rate-cell">
+                  <div class="rate-container">
+                    <div class="progress-bar-bg" style="width: 100%; background-color: #eee;">
+                      <div class="progress-bar-fill" style="width: {{ reviewer.weekly_progress_pct }}%; background-color: #4CAF50;"></div>
+                    </div>
+                    <span class="rate-text">{{ reviewer.weekly_progress_pct }}%</span>
+                  </div>
+                </td>
+                <td class="text-center count-cell">
+                  {% if reviewer.overdue > 0 %}
+                    <span class="count-badge" style="background-color: #f44336; color: white;">{{ reviewer.overdue }}</span>
+                  {% else %}
+                    <span class="count-badge" style="background-color: #4CAF50; color: white;">0</span>
+                  {% endif %}
+                </td>
+                <td class="rate-cell">
+                  <div class="rate-container">
+                    <div class="progress-bar-bg" style="width: 100%; background-color: #eee;">
+                      <div class="progress-bar-fill" style="width: {{ reviewer.total_progress_pct }}%; background-color: #2196F3;"></div>
+                    </div>
+                    <span class="rate-text">{{ reviewer.total_progress_pct }}%</span>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state-mini">
+        <p>No screening records found in this project yet.</p>
+      </div>
+    {% endif %}
+  </div>
+
   <!-- Section 2: Records Labeled Today -->
   <div class="section-card today-section">
     <div class="section-header">
