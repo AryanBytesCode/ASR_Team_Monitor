@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   dashboard:
-    build: .
-    # If you publish your image to Docker Hub, you can replace 'build: .' with:
-    # image: your-dockerhub-username/asreview-dashboard:latest
+    image: your-dockerhub-username/asreview-dashboard:latest
     container_name: asreview-dashboard
     restart: unless-stopped
     env_file:
