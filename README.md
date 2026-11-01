@@ -39,17 +39,31 @@ Edit `.env` and configure your settings:
 - `WEEKLY_GOAL`: Number of records each reviewer is expected to screen per week.
 - `PROJECT_START_DATE`: The date the project started (YYYY-MM-DD).
 - `WEEK_START_DAY`: Which day starts the week (0=Monday, 6=Sunday).
-- `TUNNEL_TOKEN`: Your Cloudflare Zero Trust tunnel token (optional, if you want to expose it securely to the internet).
+- `TUNNEL_TOKEN`: Your Cloudflare Zero Trust tunnel token (required for **Option A**).
+- `DOMAIN`: Your custom public domain name (required for **Option B**).
+- `LETSENCRYPT_EMAIL`: Your email address for TLS certificate expiry notices (required for **Option B**).
 
 ### 3. Start the Application
-Run the application in the background using Docker Compose:
+
+You can expose the application securely using either Cloudflare Tunnels or Nginx with Let's Encrypt. Choose the option that fits your infrastructure:
+
+#### Option A: Cloudflare Tunnel (Default)
+This method is recommended if you don't want to open any inbound ports on your server's firewall. Ensure you've provided the `TUNNEL_TOKEN` in the `.env` file.
 ```bash
 docker-compose up -d
 ```
 
+#### Option B: Nginx + Let's Encrypt
+This method is recommended if you have your own domain name and want to serve the dashboard directly from your server. Ensure you have pointed your domain's DNS `A` record to your server's IP address, and that ports 80 and 443 are open on your firewall.
+```bash
+# Use the alternative compose file tailored for Nginx
+docker-compose -f docker-compose.nginx.yaml up -d
+```
+
 ### 4. Access the Dashboard
 - **Local Access:** Open your web browser and navigate to `http://localhost:<PORT>` (e.g., `http://localhost:5050`).
-- **Cloudflare Tunnel:** If you provided a `TUNNEL_TOKEN`, your dashboard will be automatically and securely routed through Cloudflare to the domain you configured in your Zero Trust dashboard, without needing to open any ports.
+- **Cloudflare Tunnel (Option A):** Your dashboard will be automatically routed through Cloudflare to the domain you configured in your Zero Trust dashboard.
+- **Nginx Custom Domain (Option B):** Wait a minute or two for the Let's Encrypt certificate to generate, then navigate to `https://<YOUR_DOMAIN>` (e.g., `https://dashboard.yourdomain.com`).
 
 ---
 
