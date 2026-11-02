@@ -48,7 +48,7 @@ You can expose the application securely using Cloudflare Tunnels or run it local
 #### Option A: Cloudflare Tunnel (Default)
 This method is recommended if you don't want to open any inbound ports on your server's firewall. Ensure you've provided the `TUNNEL_TOKEN` in the `.env` file.
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 #### Option B: Direct HTTP (Local/IP Access)
